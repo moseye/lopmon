@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lopmon"
+version = "0.1.0"
+description = "A Discord bot"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "discord-py>=2.3",
+    "click>=8.0",
+]
+
+[project.scripts]
+lopmon = "lopmon.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lopmon"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=8.0",
+]
+
+[tool.hatch.envs.default.scripts]
+start = "lopmon"
+test = "pytest {args}"
