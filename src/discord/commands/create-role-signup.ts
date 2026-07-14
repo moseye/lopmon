@@ -15,7 +15,7 @@ export const createRoleSignup: Command = {
   data: new SlashCommandBuilder()
     .setName('create-role-signup')
     .setDescription('Post a message members can click to self-assign a role.')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .setContexts(InteractionContextType.Guild)
     .addRoleOption((o) => o.setName('role').setDescription('Role to hand out').setRequired(true))
     .addStringOption((o) =>
@@ -29,6 +29,9 @@ export const createRoleSignup: Command = {
 
   async execute(interaction, deps) {
     if (!interaction.inCachedGuild()) throw new UserError('Run this in a server.')
+    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+      throw new UserError('You need the **Administrator** permission to use this command.')
+    }
     const role = interaction.options.getRole('role', true)
     const prompt = interaction.options.getString('prompt', true)
 
@@ -43,10 +46,11 @@ export const createRoleSignup: Command = {
     }
 
     // Invoker hierarchy gate mirroring Discord's native rule (strictly below your highest role;
-    // guild owner exempt; Administrator is NOT exempt — matches GuildMember#manageable).
-    // setDefaultMemberPermissions(ManageRoles) is only a default admins can override in
-    // Integrations settings, so this in-handler check is load-bearing. The clicker who later
-    // presses the button is intentionally unprivileged — enforcement is creation-time by design.
+    // guild owner exempt). Administrator does not bypass role hierarchy.
+    // setDefaultMemberPermissions(Administrator) is only a default admins can override in
+    // Integrations settings, so the in-handler permission check above is load-bearing. The
+    // clicker who later presses the button is intentionally unprivileged — enforcement is
+    // creation-time by design.
     const invoker = interaction.member
     if (
       interaction.guild.ownerId !== invoker.id &&
