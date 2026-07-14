@@ -1,12 +1,12 @@
 import { REST, Routes } from 'discord.js'
-import { loadConfig } from '../config.ts'
+import { loadDiscordConfig } from '../config.ts'
 import { commands } from '../discord/commands/index.ts'
 import { createLogger } from '../lib/logger.ts'
 
 // Guild-scoped registration updates instantly (global commands can take up to an hour).
 async function main(): Promise<void> {
-  const config = loadConfig()
-  const logger = createLogger({ level: config.logLevel, pretty: true })
+  const config = loadDiscordConfig()
+  const logger = createLogger({ level: config.logLevel, pretty: !config.isProduction })
   const rest = new REST().setToken(config.discord.token)
   const body = commands.map((c) => c.data)
 

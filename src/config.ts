@@ -1,25 +1,42 @@
 import { z } from 'zod'
 
-const EnvSchema = z.object({
+const DiscordEnvSchema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_CLIENT_ID: z.string().min(1),
   DISCORD_GUILD_ID: z.string().min(1),
-  // Unused by the gateway bot (HTTP-interaction endpoints only); optional for parity.
-  DISCORD_PUBLIC_KEY: z.string().optional(),
+})
+
+const DatabaseEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
+})
+
+const RuntimeEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 })
 
-export type Config = Readonly<{
-  discord: { token: string; clientId: string; guildId: string; publicKey: string | undefined }
-  databaseUrl: string
-  nodeEnv: 'development' | 'production' | 'test'
+const BotEnvSchema = DiscordEnvSchema.extend(DatabaseEnvSchema.shape).extend(RuntimeEnvSchema.shape)
+const DatabaseScriptEnvSchema = DatabaseEnvSchema.extend(RuntimeEnvSchema.shape)
+const DiscordScriptEnvSchema = DiscordEnvSchema.extend(RuntimeEnvSchema.shape)
+
+type RuntimeConfig = Readonly<{
   logLevel: string
   isProduction: boolean
 }>
 
-export function loadConfig(): Config {
+export type DiscordConfig = Readonly<{
+  discord: Readonly<{ token: string; clientId: string; guildId: string }>
+}> &
+  RuntimeConfig
+
+export type DatabaseConfig = Readonly<{
+  databaseUrl: string
+}> &
+  RuntimeConfig
+
+export type Config = DiscordConfig & DatabaseConfig
+
+function parse<T extends z.ZodType>(schema: T): z.infer<T> {
   // Load ./.env in dev; in prod/CI/Docker the env is injected, so a missing file is fine.
   try {
     process.loadEnvFile()
@@ -27,25 +44,46 @@ export function loadConfig(): Config {
     /* no .env file present */
   }
 
-  const parsed = EnvSchema.safeParse(process.env)
+  const parsed = schema.safeParse(process.env)
   if (!parsed.success) {
     const issues = parsed.error.issues
-      .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+      .map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`)
       .join('\n')
     throw new Error(`Invalid environment:\n${issues}`)
   }
+  return parsed.data
+}
 
-  const e = parsed.data
+function runtimeConfig(env: z.infer<typeof RuntimeEnvSchema>): RuntimeConfig {
+  return {
+    logLevel: env.LOG_LEVEL,
+    isProduction: env.NODE_ENV === 'production',
+  }
+}
+
+function discordConfig(env: z.infer<typeof DiscordEnvSchema>): DiscordConfig['discord'] {
+  return {
+    token: env.DISCORD_TOKEN,
+    clientId: env.DISCORD_CLIENT_ID,
+    guildId: env.DISCORD_GUILD_ID,
+  }
+}
+
+export function loadConfig(): Config {
+  const env = parse(BotEnvSchema)
   return Object.freeze({
-    discord: {
-      token: e.DISCORD_TOKEN,
-      clientId: e.DISCORD_CLIENT_ID,
-      guildId: e.DISCORD_GUILD_ID,
-      publicKey: e.DISCORD_PUBLIC_KEY,
-    },
-    databaseUrl: e.DATABASE_URL,
-    nodeEnv: e.NODE_ENV,
-    logLevel: e.LOG_LEVEL,
-    isProduction: e.NODE_ENV === 'production',
+    discord: discordConfig(env),
+    databaseUrl: env.DATABASE_URL,
+    ...runtimeConfig(env),
   })
+}
+
+export function loadDatabaseConfig(): DatabaseConfig {
+  const env = parse(DatabaseScriptEnvSchema)
+  return Object.freeze({ databaseUrl: env.DATABASE_URL, ...runtimeConfig(env) })
+}
+
+export function loadDiscordConfig(): DiscordConfig {
+  const env = parse(DiscordScriptEnvSchema)
+  return Object.freeze({ discord: discordConfig(env), ...runtimeConfig(env) })
 }

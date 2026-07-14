@@ -1,11 +1,11 @@
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
-import { loadConfig } from '../config.ts'
+import { loadDatabaseConfig } from '../config.ts'
 import { createDatabase } from '../infra/db/index.ts'
 import { createPool } from '../infra/db/pool.ts'
 import { createLogger } from '../lib/logger.ts'
 
 async function main(): Promise<void> {
-  const config = loadConfig()
+  const config = loadDatabaseConfig()
   const logger = createLogger({ level: config.logLevel, pretty: !config.isProduction })
   const pool = createPool(config.databaseUrl, logger)
   const db = createDatabase(pool)
