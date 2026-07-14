@@ -1,0 +1,41 @@
+{
+  "name": "lopmon",
+  "version": "0.1.0",
+  "description": "Lopmon — a Discord bot for self-assign role panels and cosmetic name-color roles",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.6.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "node scripts/build.mjs",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "deploy-commands": "tsx src/scripts/deploy-commands.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/scripts/migrate.ts"
+  },
+  "dependencies": {
+    "discord.js": "^14",
+    "drizzle-orm": "^0.45",
+    "pg": "^8",
+    "pino": "^10",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2",
+    "@types/node": "^24",
+    "@types/pg": "^8",
+    "drizzle-kit": "^0.31",
+    "esbuild": "^0.28.1",
+    "pino-pretty": "^13",
+    "tsx": "^4",
+    "typescript": "^7"
+  }
+}
