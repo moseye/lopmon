@@ -20,6 +20,16 @@ export class ColorRepository {
     return rows[0]?.roleId ?? null
   }
 
+  /** True if roleId is a /mycolor-managed color role in this guild. */
+  async isColorRole(guildId: string, roleId: string): Promise<boolean> {
+    const rows = await this.#db
+      .select({ roleId: colorRole.roleId })
+      .from(colorRole)
+      .where(and(eq(colorRole.guildId, guildId), eq(colorRole.roleId, roleId)))
+      .limit(1)
+    return rows.length > 0
+  }
+
   async insertColorRole(guildId: string, hex: string, roleId: string): Promise<void> {
     await this.#db
       .insert(colorRole)

@@ -44,6 +44,27 @@ export const createRoleSignup: Command = {
       )
     }
 
+    // Invoker hierarchy gate mirroring Discord's native rule (strictly below your highest role;
+    // guild owner exempt; Administrator is NOT exempt — matches GuildMember#manageable).
+    // setDefaultMemberPermissions(ManageRoles) is only a default admins can override in
+    // Integrations settings, so this in-handler check is load-bearing. The clicker who later
+    // presses the button is intentionally unprivileged — enforcement is creation-time by design.
+    const invoker = interaction.member
+    if (
+      interaction.guild.ownerId !== invoker.id &&
+      invoker.roles.highest.comparePositionTo(role) <= 0
+    ) {
+      throw new UserError('You can only create signups for roles below your own highest role.')
+    }
+    // Residual: if an admin later drags the role above the creator's rank, existing panels still
+    // hand it out (same as every panel bot; admins can delete the message).
+
+    // Color roles are managed by /mycolor's refcount; a signup would add/remove them with no
+    // user_color bookkeeping, so GC could later delete the role off a holder's back.
+    if (await deps.colorRepo.isColorRole(interaction.guild.id, role.id)) {
+      throw new UserError('That role is managed by /mycolor and cannot be used in a signup.')
+    }
+
     const channel = interaction.channel
     if (!channel?.isSendable()) throw new UserError('I cannot send messages in this channel.')
     // isSendable() only checks the channel TYPE — verify the bot's actual access here,
