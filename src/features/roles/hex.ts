@@ -33,8 +33,3 @@ export function hexToRoleColor(canonical: string): number {
   const n = hexToInt(canonical)
   return n === 0 ? 0x010101 : n
 }
-
-/** True if a role name is one of our canonical color-role names. */
-export function isColorRoleName(name: string): boolean {
-  return /^#[0-9A-F]{6}$/.test(name)
-}

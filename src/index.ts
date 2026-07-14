@@ -15,7 +15,7 @@ async function main(): Promise<void> {
   const logger = createLogger({ level: config.logLevel, pretty: !config.isProduction })
   const pool = createPool(config.databaseUrl, logger)
   const db = createDatabase(pool)
-  const deps = buildDeps({ config, logger, db, pool })
+  const deps = buildDeps({ logger, db })
 
   const client = createClient()
   const registry = buildRegistry(commands, components)

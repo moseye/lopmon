@@ -19,8 +19,6 @@ pnpm install
 cp .env.example .env    # then fill in your Discord credentials + DATABASE_URL
 ```
 
-The repo already has a working `.env` with the four `DISCORD_*` values — **add `DATABASE_URL`** to it (see `.env.example`).
-
 Invite the bot with the **Manage Roles** permission, and drag Lopmon's role **above** any color roles it will manage.
 
 ## Develop
