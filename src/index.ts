@@ -4,6 +4,7 @@ import { createClient } from './discord/client.ts'
 import { commands } from './discord/commands/index.ts'
 import { components } from './discord/components/index.ts'
 import { registerEvents } from './discord/events/index.ts'
+import { beginShutdown, drainInFlight } from './discord/events/interactionCreate.ts'
 import { buildRegistry } from './discord/registry.ts'
 import { createDatabase } from './infra/db/index.ts'
 import { createPool } from './infra/db/pool.ts'
@@ -25,11 +26,18 @@ async function main(): Promise<void> {
     if (shuttingDown) return
     shuttingDown = true
     logger.info({ signal }, 'shutting down')
+    let code = 0
     try {
+      beginShutdown()
+      const { timedOut } = await drainInFlight()
+      if (timedOut) logger.warn('drain timed out; proceeding')
       await client.destroy()
       await pool.end()
+    } catch (error) {
+      logger.error({ err: error }, 'shutdown error')
+      code = 1
     } finally {
-      process.exit(0)
+      process.exit(code)
     }
   }
   process.on('SIGINT', () => void shutdown('SIGINT'))
