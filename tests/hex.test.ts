@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { canonicalizeHex, HexInput, hexToInt, isColorRoleName } from '../src/features/roles/hex.ts'
+import {
+  canonicalizeHex,
+  HexInput,
+  hexToInt,
+  hexToRoleColor,
+  isColorRoleName,
+} from '../src/features/roles/hex.ts'
 
 test('canonicalizeHex expands shorthand and uppercases', () => {
   assert.equal(canonicalizeHex('a20'), '#AA2200')
@@ -12,6 +18,12 @@ test('hexToInt', () => {
   assert.equal(hexToInt('#A020F0'), 0xa020f0)
   assert.equal(hexToInt('#000000'), 0)
   assert.equal(hexToInt('#FFFFFF'), 0xffffff)
+})
+
+test('hexToRoleColor remaps pure black, passes through otherwise', () => {
+  assert.equal(hexToRoleColor('#000000'), 0x010101)
+  assert.equal(hexToRoleColor('#A020F0'), 0xa020f0)
+  assert.equal(hexToRoleColor('#FFFFFF'), 0xffffff)
 })
 
 test('HexInput accepts valid and rejects invalid', () => {

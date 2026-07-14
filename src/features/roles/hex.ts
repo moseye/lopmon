@@ -25,6 +25,15 @@ export function hexToInt(canonical: string): number {
   return Number.parseInt(canonical.replace(/^#/, ''), 16)
 }
 
+/**
+ * Role color int, remapping pure black (0, which Discord treats as "no color") to near-black
+ * so #000000 names actually render dark instead of inheriting the default color.
+ */
+export function hexToRoleColor(canonical: string): number {
+  const n = hexToInt(canonical)
+  return n === 0 ? 0x010101 : n
+}
+
 /** True if a role name is one of our canonical color-role names. */
 export function isColorRoleName(name: string): boolean {
   return /^#[0-9A-F]{6}$/.test(name)

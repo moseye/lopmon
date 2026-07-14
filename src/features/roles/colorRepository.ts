@@ -31,6 +31,8 @@ export class ColorRepository {
   }
 
   async insertColorRole(guildId: string, hex: string, roleId: string): Promise<void> {
+    // /mycolor serializes find/create/insert per guild in-process, so this conflict path is only
+    // defensive for v0.1. A multi-instance deployment must use a database-backed guild lock.
     await this.#db
       .insert(colorRole)
       .values({ guildId, hex, roleId })

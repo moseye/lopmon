@@ -1,4 +1,5 @@
-import { MessageFlags, PermissionFlagsBits, roleMention } from 'discord.js'
+import { MessageFlags, roleMention } from 'discord.js'
+import { botCanManageRole } from '../../features/roles/manageable.ts'
 import { UserError } from '../../lib/errors.ts'
 import type { ComponentHandler } from '../types.ts'
 import { ROLE_SIGNUP_PREFIX } from '../ui/panels.ts'
@@ -6,7 +7,8 @@ import { ROLE_SIGNUP_PREFIX } from '../ui/panels.ts'
 export const roleSignupHandler: ComponentHandler = {
   prefix: ROLE_SIGNUP_PREFIX,
   async execute(interaction, deps) {
-    if (!interaction.inCachedGuild()) return
+    // Throw, not silent return: a bare return leaves the button click unacknowledged.
+    if (!interaction.inCachedGuild()) throw new UserError('Run this in a server.')
     // customId is untrusted client input — re-validate everything it claims.
     const roleId = interaction.customId.split(':')[1]
     if (!roleId) throw new UserError('Malformed button.')
@@ -15,15 +17,12 @@ export const roleSignupHandler: ComponentHandler = {
     const role =
       guild.roles.cache.get(roleId) ?? (await guild.roles.fetch(roleId).catch(() => null))
     if (!role) throw new UserError('That role no longer exists.')
-    if (role.managed || role.id === guild.id)
-      throw new UserError('That role cannot be self-assigned.')
 
     const me = guild.members.me
-    if (
-      !me?.permissions.has(PermissionFlagsBits.ManageRoles) ||
-      me.roles.highest.comparePositionTo(role) <= 0
-    ) {
-      throw new UserError('I cannot manage that role right now (permissions or role order).')
+    if (!me || !botCanManageRole(me, role)) {
+      throw new UserError(
+        `I cannot manage ${roleMention(role.id)} right now — it must sit below my highest role and not be managed. Ask an admin to move my role up.`,
+      )
     }
 
     const had = member.roles.cache.has(role.id)

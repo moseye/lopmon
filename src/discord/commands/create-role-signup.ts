@@ -6,6 +6,7 @@ import {
   roleMention,
   SlashCommandBuilder,
 } from 'discord.js'
+import { botCanManageRole } from '../../features/roles/manageable.ts'
 import { UserError } from '../../lib/errors.ts'
 import type { Command } from '../types.ts'
 import { roleSignupRow } from '../ui/panels.ts'
@@ -35,12 +36,9 @@ export const createRoleSignup: Command = {
     if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
       throw new UserError('I need the **Manage Roles** permission.')
     }
-    if (role.managed || role.id === interaction.guild.id) {
-      throw new UserError('That role cannot be self-assigned (it is managed or @everyone).')
-    }
-    if (me.roles.highest.comparePositionTo(role) <= 0) {
+    if (!botCanManageRole(me, role)) {
       throw new UserError(
-        `My highest role must be above ${roleMention(role.id)}. Move my role up and try again.`,
+        `I cannot manage ${roleMention(role.id)} — it must sit below my highest role and not be a managed or @everyone role. Move my role up and try again.`,
       )
     }
 
